@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EFL Pronunciation Practice</title>
+
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#ef4444">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Custom Styles -->
+    <style>
+        @keyframes pulse-record {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+        }
+        .recording { animation: pulse-record 1.5s ease-in-out infinite; }
+
+        @keyframes slide-up {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .slide-up { animation: slide-up 0.3s ease-out; }
+
+        /* Score colors */
+        .score-excellent { color: #10b981; }
+        .score-good { color: #f59e0b; }
+        .score-poor { color: #ef4444; }
+
+        /* Waveform visualization */
+        .waveform {
+            height: 60px;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            justify-content: center;
+            padding: 10px;
+        }
+
+        .wave-bar {
+            width: 3px;
+            background: #3b82f6;
+            border-radius: 3px;
+            transition: height 0.1s ease;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-4">
+    <div class="max-w-md mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-6 pt-4">
+            <h1 class="text-3xl font-bold text-gray-800">EFL Pronunciation</h1>
+            <p class="text-gray-600 mt-2">Luyện phát âm tiếng Anh với AI</p>
+        </div>
+
+        <!-- Main Card -->
+        <div class="bg-white rounded-2xl shadow-xl p-6">
+            <!-- Sentence Display -->
+            <div class="mb-6">
+                <label class="text-sm text-gray-500 font-medium mb-2 block">Đọc câu sau:</label>
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200">
+                    <p id="sentenceText" class="text-lg font-medium text-gray-800">
+                        Hello, how are you today?
+                    </p>
+                    <p id="sentencePhonetic" class="text-sm text-gray-500 mt-1">
+                        /həˈloʊ haʊ ɑr ju təˈdeɪ/
+                    </p>
+                </div>
+            </div>
+
+            <!-- Play Native Audio Button -->
+            <button id="playNativeBtn" class="w-full mb-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span>Nghe mẫu</span>
+            </button>
+
+            <!-- Waveform Visualization -->
+            <div id="waveformContainer" class="hidden mb-4 bg-gray-50 rounded-lg">
+                <div class="waveform" id="waveform">
+                    <!-- Wave bars will be inserted here -->
+                </div>
+            </div>
+
+            <!-- Record Button -->
+            <button id="recordBtn" class="w-full py-4 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl text-lg font-semibold hover:from-red-600 hover:to-red-700 transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                <span class="flex items-center justify-center gap-3">
+                    <svg id="micIcon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+                    </svg>
+                    <span id="recordBtnText">Nhấn để ghi âm</span>
+                </span>
+            </button>
+
+            <!-- Status Message -->
+            <div id="statusMessage" class="mt-4 text-center text-sm text-gray-500 h-6">
+                Sẵn sàng ghi âm
+            </div>
+
+            <!-- Score Display -->
+            <div id="scoreContainer" class="hidden mt-6 bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-6 slide-up">
+                <div class="text-center">
+                    <div class="text-5xl font-bold mb-2" id="scoreValue">85</div>
+                    <div class="text-gray-600 mb-4">Điểm phát âm</div>
+
+                    <!-- Score Details -->
+                    <div class="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-200">
+                        <div>
+                            <div class="text-sm text-gray-500">Độ chính xác</div>
+                            <div class="text-lg font-semibold" id="accuracyScore">-</div>
+                        </div>
+                        <div>
+                            <div class="text-sm text-gray-500">Độ lưu loát</div>
+                            <div class="text-lg font-semibold" id="fluencyScore">-</div>
+                        </div>
+                    </div>
+
+                    <!-- Feedback Message -->
+                    <div class="mt-4 p-3 bg-white rounded-lg">
+                        <p id="feedbackMessage" class="text-sm text-gray-600"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Next Button -->
+            <button id="nextBtn" class="hidden w-full mt-4 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
+                Câu tiếp theo →
+            </button>
+
+            <!-- History Section -->
+            <div id="historyContainer" class="mt-6 pt-6 border-t border-gray-200">
+                <h3 class="text-sm font-semibold text-gray-700 mb-3">Lịch sử gần đây</h3>
+                <div id="historyList" class="space-y-2">
+                    <!-- History items will be inserted here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-6 text-sm text-gray-500">
+            <p>Powered by SpeechAce AI</p>
+        </div>
+    </div>
+
+    <!-- Load JavaScript -->
+    <script src="app.js"></script>
+</body>
+</html>
