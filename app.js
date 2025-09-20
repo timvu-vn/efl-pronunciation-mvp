@@ -1,3 +1,6 @@
+// ===== DEBUG LOG =====
+console.log('app.js loaded successfully');
+
 // ===== CONFIGURATION =====
 const CONFIG = {
     SUPABASE_URL: 'YOUR_SUPABASE_URL', // Replace in production
