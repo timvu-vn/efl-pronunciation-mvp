@@ -1,0 +1,14 @@
+{
+  "name": "efl-pronunciation-mvp",
+  "version": "1.0.0",
+  "description": "EFL Pronunciation Practice App with AI Scoring",
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'No build step required'"
+  },
+  "dependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
