@@ -148,88 +148,54 @@ async function processAudio(audioBlob) {
     console.log('Text to score:', SENTENCES[currentSentenceIndex].text);
     
     try {
-        // First try: Direct SpeechAce API call
-        console.log('Attempting SpeechAce API call...');
+        // Call our backend API proxy instead of direct SpeechAce API
+        console.log('Calling backend API proxy...');
         
         const audioBase64 = await blobToBase64(audioBlob);
         
-        // Method 1: Try with FormData
-        const formData = new FormData();
-        formData.append('audio_base64', audioBase64);
-        formData.append('text', SENTENCES[currentSentenceIndex].text);
-        formData.append('question_info', 'u1/q1');
-        formData.append('dialect', 'en-us');
-        formData.append('user_id', 'demo_user');
+        const requestBody = {
+            audio_base64: audioBase64,
+            text: SENTENCES[currentSentenceIndex].text,
+            dialect: 'en-us',
+            user_id: 'demo_user'
+        };
         
-        const apiUrl = `${CONFIG.SPEECHACE_API_URL}?key=${encodeURIComponent(CONFIG.SPEECHACE_API_KEY)}`;
-        console.log('API URL:', apiUrl);
+        console.log('Backend API request payload prepared');
         
-        const response = await fetch(apiUrl, {
+        const response = await fetch('/api/speech-score', {
             method: 'POST',
-            mode: 'cors',
             headers: {
+                'Content-Type': 'application/json',
                 'Accept': 'application/json',
             },
-            body: formData
+            body: JSON.stringify(requestBody)
         });
 
-        console.log('API Response status:', response.status);
+        console.log('Backend API Response status:', response.status);
         
         if (!response.ok) {
-            throw new Error(`API HTTP ${response.status}: ${response.statusText}`);
+            const errorData = await response.json();
+            console.error('Backend API Error:', errorData);
+            throw new Error(`Backend API error: ${response.status} - ${errorData.message || errorData.error}`);
         }
 
         const result = await response.json();
-        console.log('SpeechAce API Success:', result);
-        elements.statusMessage.textContent = 'SpeechAce API success!';
-        displayScore(result);
-        saveToHistory(result);
-        return;
+        console.log('Backend API Success:', result);
+        
+        if (result.success && result.data) {
+            elements.statusMessage.textContent = 'SpeechAce API success via backend!';
+            displayScore(result.data);
+            saveToHistory(result.data);
+            return;
+        } else {
+            throw new Error('Backend API returned unsuccessful response');
+        }
 
     } catch (error) {
-        console.error('SpeechAce API Error:', error);
+        console.error('Backend API Error:', error);
         
-        // Try Method 2: URL-encoded POST
-        try {
-            console.log('Trying alternative API format...');
-            
-            const audioBase64 = await blobToBase64(audioBlob);
-            const params = new URLSearchParams({
-                'key': CONFIG.SPEECHACE_API_KEY,
-                'audio_base64': audioBase64,
-                'text': SENTENCES[currentSentenceIndex].text,
-                'question_info': 'u1/q1',
-                'dialect': 'en-us',
-                'user_id': 'demo_user'
-            });
-            
-            const response2 = await fetch(CONFIG.SPEECHACE_API_URL, {
-                method: 'POST',
-                mode: 'cors',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'Accept': 'application/json',
-                },
-                body: params
-            });
-            
-            console.log('Alternative API Response status:', response2.status);
-            
-            if (response2.ok) {
-                const result2 = await response2.json();
-                console.log('Alternative SpeechAce API Success:', result2);
-                elements.statusMessage.textContent = 'SpeechAce API success (alternative method)!';
-                displayScore(result2);
-                saveToHistory(result2);
-                return;
-            }
-            
-        } catch (error2) {
-            console.error('Alternative API also failed:', error2);
-        }
-        
-        // Final fallback: Mock scoring with realistic simulation
-        console.log('Using intelligent mock scoring...');
+        // Fallback: Intelligent mock scoring
+        console.log('Using intelligent mock scoring as fallback...');
         
         // Simulate processing time
         await new Promise(resolve => setTimeout(resolve, 1500));
@@ -244,7 +210,7 @@ async function processAudio(audioBlob) {
             fluency_score: Math.round(baseScore + (Math.random() * 10 - 5))
         };
 
-        elements.statusMessage.textContent = `Mock score generated (API unavailable due to CORS)`;
+        elements.statusMessage.textContent = `Mock score (Backend API unavailable: ${error.message})`;
         console.log('Generated realistic mock score:', mockScore);
         displayScore(mockScore);
         saveToHistory(mockScore);
