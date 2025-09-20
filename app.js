@@ -31,7 +31,7 @@ let microphone = null;
 let animationFrame = null;
 
 // ===== INITIALIZE SUPABASE =====
-const supabase = window.supabase ? window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY) : null;
+const supabase = null; // Disabled for MVP - using localStorage instead
 
 // ===== DOM ELEMENTS =====
 const elements = {
