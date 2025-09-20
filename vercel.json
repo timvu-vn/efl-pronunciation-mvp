@@ -1,6 +1,10 @@
 {
   "version": 2,
-  "builds": [{"src": "**/*", "use": "@vercel/static"}],
+  "functions": {
+    "api/**/*.js": {
+      "runtime": "@vercel/node"
+    }
+  },
   "headers": [{
     "source": "/(.*)",
     "headers": [{"key": "Cache-Control", "value": "public, max-age=3600"}]
