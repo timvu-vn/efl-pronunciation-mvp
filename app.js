@@ -56,6 +56,13 @@ const elements = {
     waveform: document.getElementById('waveform')
 };
 
+// Debug: Check if elements are found
+console.log('DOM elements check:', {
+    recordBtn: !!elements.recordBtn,
+    playNativeBtn: !!elements.playNativeBtn,
+    nextBtn: !!elements.nextBtn
+});
+
 // ===== WAVEFORM VISUALIZATION =====
 function initWaveform() {
     const barCount = 30;
