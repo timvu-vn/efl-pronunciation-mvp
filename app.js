@@ -36,32 +36,8 @@ let animationFrame = null;
 // ===== INITIALIZE SUPABASE =====
 const supabase = null; // Disabled for MVP - using localStorage instead
 
-// ===== DOM ELEMENTS =====
-const elements = {
-    sentenceText: document.getElementById('sentenceText'),
-    sentencePhonetic: document.getElementById('sentencePhonetic'),
-    recordBtn: document.getElementById('recordBtn'),
-    recordBtnText: document.getElementById('recordBtnText'),
-    micIcon: document.getElementById('micIcon'),
-    playNativeBtn: document.getElementById('playNativeBtn'),
-    statusMessage: document.getElementById('statusMessage'),
-    scoreContainer: document.getElementById('scoreContainer'),
-    scoreValue: document.getElementById('scoreValue'),
-    accuracyScore: document.getElementById('accuracyScore'),
-    fluencyScore: document.getElementById('fluencyScore'),
-    feedbackMessage: document.getElementById('feedbackMessage'),
-    nextBtn: document.getElementById('nextBtn'),
-    historyList: document.getElementById('historyList'),
-    waveformContainer: document.getElementById('waveformContainer'),
-    waveform: document.getElementById('waveform')
-};
-
-// Debug: Check if elements are found
-console.log('DOM elements check:', {
-    recordBtn: !!elements.recordBtn,
-    playNativeBtn: !!elements.playNativeBtn,
-    nextBtn: !!elements.nextBtn
-});
+// ===== DOM ELEMENTS (Will be initialized in DOMContentLoaded) =====
+let elements = {};
 
 // ===== WAVEFORM VISUALIZATION =====
 function initWaveform() {
@@ -306,20 +282,61 @@ function playNativeAudio() {
     window.speechSynthesis.speak(utterance);
 }
 
-// ===== EVENT LISTENERS =====
-elements.recordBtn.addEventListener('click', () => {
-    if (!isRecording) {
-        startRecording();
-    } else {
-        stopRecording();
-    }
-});
-
-elements.nextBtn.addEventListener('click', nextSentence);
-elements.playNativeBtn.addEventListener('click', playNativeAudio);
-
 // ===== INITIALIZATION =====
 window.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM Content Loaded - Initializing app');
+    
+    // Initialize DOM elements
+    elements = {
+        sentenceText: document.getElementById('sentenceText'),
+        sentencePhonetic: document.getElementById('sentencePhonetic'),
+        recordBtn: document.getElementById('recordBtn'),
+        recordBtnText: document.getElementById('recordBtnText'),
+        micIcon: document.getElementById('micIcon'),
+        playNativeBtn: document.getElementById('playNativeBtn'),
+        statusMessage: document.getElementById('statusMessage'),
+        scoreContainer: document.getElementById('scoreContainer'),
+        scoreValue: document.getElementById('scoreValue'),
+        accuracyScore: document.getElementById('accuracyScore'),
+        fluencyScore: document.getElementById('fluencyScore'),
+        feedbackMessage: document.getElementById('feedbackMessage'),
+        nextBtn: document.getElementById('nextBtn'),
+        historyList: document.getElementById('historyList'),
+        waveformContainer: document.getElementById('waveformContainer'),
+        waveform: document.getElementById('waveform')
+    };
+
+    // Debug: Check if elements are found
+    console.log('DOM elements check:', {
+        recordBtn: !!elements.recordBtn,
+        playNativeBtn: !!elements.playNativeBtn,
+        nextBtn: !!elements.nextBtn
+    });
+
+    // Add event listeners
+    if (elements.recordBtn) {
+        elements.recordBtn.addEventListener('click', () => {
+            console.log('Record button clicked, isRecording:', isRecording);
+            if (!isRecording) {
+                startRecording();
+            } else {
+                stopRecording();
+            }
+        });
+    }
+
+    if (elements.nextBtn) {
+        elements.nextBtn.addEventListener('click', nextSentence);
+    }
+
+    if (elements.playNativeBtn) {
+        elements.playNativeBtn.addEventListener('click', () => {
+            console.log('Play native audio clicked');
+            playNativeAudio();
+        });
+    }
+
+    // Initialize app
     loadSentence();
     updateHistoryDisplay();
 
@@ -328,7 +345,9 @@ window.addEventListener('DOMContentLoaded', () => {
         if (result.state === 'denied') {
             elements.statusMessage.textContent = 'Vui lòng cho phép truy cập microphone';
         }
-    });
+    }).catch(console.warn);
+
+    console.log('App initialization complete');
 });
 
 // ===== PWA SUPPORT =====
