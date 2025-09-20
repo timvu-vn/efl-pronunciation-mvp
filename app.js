@@ -355,6 +355,72 @@ function playNativeAudio() {
     window.speechSynthesis.speak(utterance);
 }
 
+// ===== TEST API WITHOUT MICROPHONE =====
+async function testAPIWithoutMic() {
+    console.log('Testing API without microphone...');
+    elements.statusMessage.textContent = 'Testing API without mic...';
+    
+    try {
+        // Create fake audio data (silence)
+        const fakeAudioData = 'UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmccBzuVzJKGCAg';
+        
+        const requestBody = {
+            audio_base64: fakeAudioData,
+            text: SENTENCES[currentSentenceIndex].text,
+            dialect: 'en-us',
+            user_id: 'test_user'
+        };
+        
+        console.log('Making test API call to backend...');
+        console.log('Test request body:', requestBody);
+        
+        const response = await fetch('/api/speech-score', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify(requestBody)
+        });
+
+        console.log('Test API Response status:', response.status);
+        console.log('Test API Response headers:', [...response.headers.entries()]);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Test API Error Response:', errorText);
+            throw new Error(`API error: ${response.status} - ${errorText}`);
+        }
+
+        const result = await response.json();
+        console.log('Test API Success Response:', result);
+        
+        if (result.success && result.data) {
+            elements.statusMessage.textContent = 'SpeechAce API test successful!';
+            displayScore(result.data);
+            saveToHistory(result.data);
+        } else {
+            throw new Error('API returned unsuccessful response');
+        }
+
+    } catch (error) {
+        console.error('Test API Error:', error);
+        elements.statusMessage.textContent = `Test API failed: ${error.message}`;
+        
+        // Show mock score anyway for demo
+        const mockScore = {
+            overall_score: 75,
+            pronunciation_score: 78,
+            fluency_score: 72
+        };
+        
+        setTimeout(() => {
+            displayScore(mockScore);
+            saveToHistory(mockScore);
+        }, 1000);
+    }
+}
+
 // ===== INITIALIZATION =====
 window.addEventListener('DOMContentLoaded', () => {
     console.log('DOM Content Loaded - Initializing app');
@@ -397,6 +463,13 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // Add test button for API testing without microphone
+    const testBtn = document.createElement('button');
+    testBtn.textContent = 'Test API (No Mic)';
+    testBtn.className = 'w-full mt-2 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition';
+    testBtn.addEventListener('click', testAPIWithoutMic);
+    elements.recordBtn.parentNode.insertBefore(testBtn, elements.recordBtn.nextSibling);
 
     if (elements.nextBtn) {
         elements.nextBtn.addEventListener('click', nextSentence);
