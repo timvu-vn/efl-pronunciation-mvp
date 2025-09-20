@@ -144,23 +144,37 @@ function stopRecording() {
 
 // ===== SPEECHACE API INTEGRATION =====
 async function processAudio(audioBlob) {
+    console.log('Processing audio blob:', audioBlob.size, 'bytes');
+    console.log('API URL:', CONFIG.SPEECHACE_API_URL);
+    console.log('Text to score:', SENTENCES[currentSentenceIndex].text);
+    
     try {
         const formData = new FormData();
-        formData.append('audio', audioBlob, 'recording.wav');
+        formData.append('audio_base64', await blobToBase64(audioBlob));
         formData.append('text', SENTENCES[currentSentenceIndex].text);
+        formData.append('question_info', 'u1/q1');
         formData.append('dialect', 'en-us');
-        formData.append('user_id', CONFIG.SPEECHACE_API_KEY);
-
-        const response = await fetch(CONFIG.SPEECHACE_API_URL, {
+        formData.append('user_id', 'test_user');
+        
+        console.log('Making API request to SpeechAce...');
+        
+        const response = await fetch(CONFIG.SPEECHACE_API_URL + '?key=' + encodeURIComponent(CONFIG.SPEECHACE_API_KEY), {
             method: 'POST',
             body: formData
         });
 
+        console.log('API Response status:', response.status);
+        console.log('API Response headers:', response.headers);
+
         if (!response.ok) {
-            throw new Error('API request failed');
+            const errorText = await response.text();
+            console.error('API Error Response:', errorText);
+            throw new Error(`API request failed: ${response.status} - ${errorText}`);
         }
 
         const result = await response.json();
+        console.log('SpeechAce API Success:', result);
+        elements.statusMessage.textContent = 'SpeechAce API success!';
         displayScore(result);
         saveToHistory(result);
 
@@ -174,7 +188,7 @@ async function processAudio(audioBlob) {
             fluency_score: Math.floor(Math.random() * 30) + 70
         };
 
-        elements.statusMessage.textContent = 'Using mock score (API error)';
+        elements.statusMessage.textContent = 'Using mock score (API error): ' + error.message;
         displayScore(mockScore);
         saveToHistory(mockScore);
     }
@@ -182,6 +196,16 @@ async function processAudio(audioBlob) {
     // Reset button
     elements.recordBtn.disabled = false;
     elements.recordBtnText.textContent = 'Nhấn để ghi âm';
+}
+
+// Helper function to convert blob to base64
+function blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
 }
 
 // ===== SCORE DISPLAY =====
