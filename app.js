@@ -75,10 +75,17 @@ function visualizeAudio() {
 
 // ===== RECORDING FUNCTIONS =====
 async function startRecording() {
+    console.log('startRecording() called');
+    
     try {
+        console.log('Requesting microphone access...');
+        elements.statusMessage.textContent = 'Đang yêu cầu quyền truy cập microphone...';
+        
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        console.log('Microphone access granted, stream:', stream);
 
         // Setup audio context for visualization
+        console.log('Setting up audio context...');
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
         analyser = audioContext.createAnalyser();
         microphone = audioContext.createMediaStreamSource(stream);
@@ -86,14 +93,17 @@ async function startRecording() {
         analyser.fftSize = 256;
 
         // Setup media recorder
+        console.log('Setting up media recorder...');
         mediaRecorder = new MediaRecorder(stream);
         audioChunks = [];
 
         mediaRecorder.ondataavailable = (event) => {
+            console.log('Audio data available:', event.data.size, 'bytes');
             audioChunks.push(event.data);
         };
 
         mediaRecorder.onstop = async () => {
+            console.log('Recording stopped, processing audio...');
             const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
             await processAudio(audioBlob);
 
@@ -109,6 +119,7 @@ async function startRecording() {
         };
 
         // Start recording
+        console.log('Starting media recorder...');
         mediaRecorder.start();
         isRecording = true;
 
@@ -121,10 +132,25 @@ async function startRecording() {
         elements.waveformContainer.classList.remove('hidden');
         initWaveform();
         visualizeAudio();
+        
+        console.log('Recording started successfully');
 
     } catch (error) {
         console.error('Error starting recording:', error);
-        elements.statusMessage.textContent = 'Lỗi: Không thể truy cập microphone';
+        console.error('Error name:', error.name);
+        console.error('Error message:', error.message);
+        
+        let errorMessage = 'Lỗi: Không thể truy cập microphone';
+        
+        if (error.name === 'NotAllowedError') {
+            errorMessage = 'Lỗi: Bạn chưa cho phép truy cập microphone';
+        } else if (error.name === 'NotFoundError') {
+            errorMessage = 'Lỗi: Không tìm thấy microphone';
+        } else if (error.name === 'NotSupportedError') {
+            errorMessage = 'Lỗi: Trình duyệt không hỗ trợ ghi âm';
+        }
+        
+        elements.statusMessage.textContent = errorMessage;
     }
 }
 
